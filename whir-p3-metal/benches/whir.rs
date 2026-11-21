@@ -1,0 +1,188 @@
+use criterion::{Criterion, criterion_group, criterion_main};
+use p3_challenger::DuplexChallenger;
+use p3_dft::Radix2DFTSmallBatch;
+use p3_field::{Field, extension::BinomialExtensionField};
+use p3_koala_bear::{KoalaBear, Poseidon2KoalaBear};
+use p3_merkle_tree::MerkleTreeMmcs;
+use p3_multilinear_util::{point::Point, poly::Poly};
+use p3_symmetric::{PaddingFreeSponge, TruncatedPermutation};
+use rand::{RngExt, SeedableRng, rngs::SmallRng};
+use whir_p3::{
+    fiat_shamir::domain_separator::DomainSeparator,
+    parameters::{
+        DEFAULT_MAX_POW, FoldingFactor, ProtocolParameters, SecurityAssumption, SumcheckStrategy,
+        WhirConfig,
+    },
+    whir::{committer::writer::CommitmentWriter, proof::WhirProof, prover::Prover},
+};
+
+type F = KoalaBear;
+type EF = BinomialExtensionField<F, 4>;
+
+type Poseidon16 = Poseidon2KoalaBear<16>;
+type Poseidon24 = Poseidon2KoalaBear<24>;
+
+type MerkleHash = PaddingFreeSponge<Poseidon24, 24, 16, 8>; // leaf hashing
+type MerkleCompress = TruncatedPermutation<Poseidon16, 2, 8, 16>; // 2-to-1 compression
+type MyChallenger = DuplexChallenger<F, Poseidon16, 16, 8>;
+type PackedF = <F as Field>::Packing;
+type MyMmcs = MerkleTreeMmcs<PackedF, PackedF, MerkleHash, MerkleCompress, 2, 8>;
+
+#[allow(clippy::type_complexity)]
+fn prepare_inputs() -> (
+    WhirConfig<EF, F, MyMmcs, MyChallenger>,
+    ProtocolParameters<MyMmcs>,
+    usize,
+    Radix2DFTSmallBatch<F>,
+    whir_p3::constraints::statement::initial::InitialStatement<F, EF>,
+    MyChallenger,
+    DomainSeparator<EF, F>,
+) {
+    // Protocol parameter configuration
+
+    // Target cryptographic security in bits.
+    let security_level = 100;
+
+    // Number of Boolean variables in the multilinear polynomial. Polynomial has 2^24 coefficients.
+    let num_variables = 24;
+
+    // Number of PoW bits required, computed based on the domain size and rate.
+    let pow_bits = DEFAULT_MAX_POW;
+
+    // Folding factor `k`: number of variables folded per round in the sumcheck.
+    let folding_factor = FoldingFactor::Constant(4);
+
+    // Low-degree extension (LDE) blowup factor: inverse of `rate`.
+    let starting_rate = 1;
+
+    // RS code initial domain size reduction factor (controls the LDE domain size).
+    let rs_domain_initial_reduction_factor = 3;
+
+    // Create multivariate polynomial and hash setup
+
+    // Define the hash functions for Merkle tree and compression.
+    let mut rng = SmallRng::seed_from_u64(1);
+    let poseidon16 = Poseidon16::new_from_rng_128(&mut rng);
+    let poseidon24 = Poseidon24::new_from_rng_128(&mut rng);
+
+    let merkle_hash = MerkleHash::new(poseidon24);
+    let merkle_compress = MerkleCompress::new(poseidon16.clone());
+    let mmcs = MyMmcs::new(merkle_hash, merkle_compress, 0);
+
+    // Type of soundness assumption used in the IOP model.
+    let soundness_type = SecurityAssumption::CapacityBound;
+
+    // Assemble the protocol-level parameters.
+    let whir_params = ProtocolParameters {
+        security_level,
+        pow_bits,
+        folding_factor,
+        mmcs,
+        soundness_type,
+        starting_log_inv_rate: starting_rate,
+        rs_domain_initial_reduction_factor,
+    };
+
+    // Combine multivariate and protocol parameters into a unified WHIR config.
+    let params = WhirConfig::new(num_variables, whir_params.clone());
+
+    // Sample random multilinear polynomial
+
+    // Total number of coefficients = 2^num_variables.
+    let num_coeffs = 1 << num_variables;
+
+    // Use a fixed-seed RNG to ensure deterministic benchmark inputs.
+    let mut rng = SmallRng::seed_from_u64(0);
+
+    // Sample a random multilinear polynomial over `F`, represented by its evaluations.
+    let polynomial = Poly::<F>::new((0..num_coeffs).map(|_| rng.random()).collect());
+
+    // Build a simple initial statement with one evaluation constraint.
+    let mut initial_statement = params.initial_statement(polynomial, SumcheckStrategy::Svo);
+    let _ = initial_statement.evaluate(&Point::rand(&mut rng, num_variables));
+
+    // Fiat-Shamir setup
+
+    // Create a domain separator for transcript hashing.
+    let mut domainsep = DomainSeparator::new(vec![]);
+
+    // Commit protocol parameters and proof type to the domain separator.
+    domainsep.commit_statement::<_, _, 32>(&params);
+    domainsep.add_whir_proof::<_, _, 32>(&params);
+
+    // Instantiate the Fiat-Shamir challenger from an empty seed and Keccak.
+    let challenger = MyChallenger::new(poseidon16);
+
+    // DFT backend setup
+
+    // Construct a Radix-2 FFT backend that supports small batch DFTs over `F`.
+    let dft = Radix2DFTSmallBatch::<F>::new(1 << params.max_fft_size());
+
+    // Return all preprocessed components needed to run commit/prove/verify benchmarks.
+    (
+        params,
+        whir_params,
+        num_variables,
+        dft,
+        initial_statement,
+        challenger,
+        domainsep,
+    )
+}
+
+fn benchmark_commit_and_prove(c: &mut Criterion) {
+    let (params, whir_params, num_variables, dft, initial_statement, challenger, domainsep) =
+        prepare_inputs();
+
+    c.bench_function("commit", |b| {
+        b.iter(|| {
+            let mut challenger_clone = challenger.clone();
+            domainsep.observe_domain_separator(&mut challenger_clone);
+            let mut proof =
+                WhirProof::<F, EF, MyMmcs>::from_protocol_parameters(&whir_params, num_variables);
+            let committer = CommitmentWriter::new(&params);
+            let mut initial_statement = initial_statement.clone();
+            let _prover_data = committer
+                .commit(
+                    &dft,
+                    &mut proof,
+                    &mut challenger_clone,
+                    &mut initial_statement,
+                )
+                .unwrap();
+        });
+    });
+
+    c.bench_function("prove", |b| {
+        b.iter(|| {
+            let mut challenger_clone = challenger.clone();
+            domainsep.observe_domain_separator(&mut challenger_clone);
+            let mut proof =
+                WhirProof::<F, EF, MyMmcs>::from_protocol_parameters(&whir_params, num_variables);
+            let committer = CommitmentWriter::new(&params);
+            let mut initial_statement = initial_statement.clone();
+            let prover_data = committer
+                .commit(
+                    &dft,
+                    &mut proof,
+                    &mut challenger_clone,
+                    &mut initial_statement,
+                )
+                .unwrap();
+
+            let prover = Prover(&params);
+            prover
+                .prove(
+                    &dft,
+                    &mut proof,
+                    &mut challenger_clone,
+                    &initial_statement,
+                    prover_data,
+                )
+                .unwrap();
+        });
+    });
+}
+
+criterion_group!(benches, benchmark_commit_and_prove);
+criterion_main!(benches);
