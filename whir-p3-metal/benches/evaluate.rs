@@ -1,0 +1,43 @@
+use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
+use p3_field::extension::BinomialExtensionField;
+use p3_koala_bear::KoalaBear;
+use p3_multilinear_util::{point::Point, poly::Poly};
+use rand::{RngExt, SeedableRng, rngs::SmallRng};
+
+type F = KoalaBear;
+type EF4 = BinomialExtensionField<F, 4>;
+
+fn generate_test_case(num_variables: usize) -> (Poly<F>, Point<EF4>) {
+    let mut rng = SmallRng::seed_from_u64(1);
+    let num_coeffs = 1 << num_variables;
+    let coeffs = (0..num_coeffs).map(|_| rng.random()).collect();
+    let point = Point::new((0..num_variables).map(|_| rng.random()).collect());
+    (Poly::new(coeffs), point)
+}
+
+fn benchmark_evaluate(c: &mut Criterion) {
+    let mut group = c.benchmark_group("evaluate");
+
+    for &num_variables in &[4, 8, 12, 16, 20, 25] {
+        let (poly, point) = generate_test_case(num_variables);
+
+        group.bench_with_input(
+            BenchmarkId::from_parameter(num_variables),
+            &num_variables,
+            |b, &_num_variables| {
+                b.iter_batched(
+                    || (poly.clone(), point.clone()),
+                    |(poly, point)| {
+                        let _ = poly.eval_base(&point);
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+
+    group.finish();
+}
+
+criterion_group!(benches, benchmark_evaluate);
+criterion_main!(benches);

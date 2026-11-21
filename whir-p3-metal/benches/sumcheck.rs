@@ -1,0 +1,183 @@
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
+use p3_baby_bear::{BabyBear, Poseidon2BabyBear};
+use p3_challenger::{DuplexChallenger, FieldChallenger};
+use p3_field::{Field, extension::BinomialExtensionField};
+use p3_merkle_tree::MerkleTreeMmcs;
+use p3_multilinear_util::{point::Point, poly::Poly};
+use p3_symmetric::{PaddingFreeSponge, TruncatedPermutation};
+use rand::{RngExt, SeedableRng, rngs::SmallRng};
+use whir_p3::{
+    constraints::statement::initial::InitialStatement,
+    fiat_shamir::domain_separator::DomainSeparator,
+    parameters::{FoldingFactor, ProtocolParameters, SecurityAssumption, SumcheckStrategy},
+    sumcheck::prover::SumcheckProver,
+    whir::proof::{SumcheckData, WhirProof},
+};
+
+type F = BabyBear;
+type EF = BinomialExtensionField<BabyBear, 4>;
+type Perm = Poseidon2BabyBear<16>;
+type MyHash = PaddingFreeSponge<Perm, 16, 8, 8>;
+type MyCompress = TruncatedPermutation<Perm, 2, 8, 16>;
+type MyChallenger = DuplexChallenger<F, Perm, 16, 8>;
+type PackedF = <F as Field>::Packing;
+type MyMmcs = MerkleTreeMmcs<PackedF, PackedF, MyHash, MyCompress, 2, 8>;
+
+/// Helper to create protocol parameters for benchmarking
+fn create_test_protocol_params(folding_factor: FoldingFactor) -> ProtocolParameters<MyMmcs> {
+    let mut rng = SmallRng::seed_from_u64(1);
+    let perm = Perm::new_from_rng_128(&mut rng);
+    let mmcs = MyMmcs::new(MyHash::new(perm.clone()), MyCompress::new(perm), 0);
+
+    ProtocolParameters {
+        security_level: 32,
+        pow_bits: 0,
+        rs_domain_initial_reduction_factor: 1,
+        folding_factor,
+        mmcs,
+        soundness_type: SecurityAssumption::UniqueDecoding,
+        starting_log_inv_rate: 1,
+    }
+}
+
+/// Helper to create a fresh domain separator and challenger for each benchmark iteration.
+fn setup_challenger() -> MyChallenger {
+    let mut rng = SmallRng::seed_from_u64(0);
+    let perm = Perm::new_from_rng_128(&mut rng);
+    MyChallenger::new(perm)
+}
+
+/// Helper to generate a random multilinear polynomial.
+fn generate_poly(num_vars: usize) -> Poly<F> {
+    let mut rng = SmallRng::seed_from_u64(1);
+    let evals = (0..1 << num_vars).map(|_| rng.random()).collect();
+    Poly::new(evals)
+}
+
+/// Main benchmark function to test the sumcheck prover.
+fn bench_sumcheck_prover(c: &mut Criterion) {
+    let mut group = c.benchmark_group("SumcheckProver");
+    // Use a smaller sample size for long-running benchmarks
+    group.sample_size(10);
+
+    // Define the range of variable counts to benchmark.
+    for num_vars in &[16, 18, 20, 22, 24] {
+        // Generate a large polynomial to use for this set of benchmarks.
+        let poly = generate_poly(*num_vars);
+
+        // Benchmark for the classic, round-by-round sumcheck
+        let classic_folding_schedule = [*num_vars / 2, num_vars - (*num_vars / 2)];
+
+        // Create parameters with a dummy folding factor (we'll use manual schedule)
+        let params = create_test_protocol_params(FoldingFactor::Constant(2));
+
+        // Setup domain separator
+        let domsep: DomainSeparator<EF, F> = DomainSeparator::new(vec![]);
+
+        // Setup base challenger state (cloned per iteration)
+        let mut challenger = setup_challenger();
+        domsep.observe_domain_separator(&mut challenger);
+
+        // Create constraint using challenger directly
+        let mut initial_statement = InitialStatement::new(
+            poly.clone(),
+            params.folding_factor.at_round(0),
+            SumcheckStrategy::Classic,
+        );
+        for _ in 0..3 {
+            let _ = initial_statement.evaluate(&Point::expand_from_univariate(
+                challenger.sample_algebra_element(),
+                *num_vars,
+            ));
+        }
+
+        group.bench_with_input(
+            BenchmarkId::new("Classic", *num_vars),
+            &(initial_statement, challenger.clone()),
+            |b, (initial_statement, challenger)| {
+                b.iter(|| {
+                    let mut challenger = challenger.clone();
+                    // Initialize proof
+                    let mut proof =
+                        WhirProof::<F, EF, MyMmcs>::from_protocol_parameters(&params, *num_vars);
+
+                    // First round - fold first half of variables
+                    let (mut sumcheck_prover, _) = SumcheckProver::from_base_evals(
+                        &mut proof.initial_sumcheck,
+                        &mut challenger,
+                        classic_folding_schedule[1],
+                        0,
+                        initial_statement,
+                    );
+
+                    // Second round - fold remaining variables
+                    if classic_folding_schedule.len() > 1 && classic_folding_schedule[1] > 0 {
+                        let mut sumcheck_data: SumcheckData<F, EF> = SumcheckData::default();
+                        sumcheck_prover.compute_sumcheck_polynomials(
+                            &mut sumcheck_data,
+                            &mut challenger,
+                            classic_folding_schedule[1],
+                            0,
+                            None,
+                        );
+                        proof.set_final_sumcheck_data(sumcheck_data);
+                    }
+                });
+            },
+        );
+
+        // Create constraint using challenger directly
+        let mut initial_statement = InitialStatement::new(
+            poly.clone(),
+            params.folding_factor.at_round(0),
+            SumcheckStrategy::Svo,
+        );
+        for _ in 0..3 {
+            let _ = initial_statement.evaluate(&Point::expand_from_univariate(
+                challenger.sample_algebra_element(),
+                *num_vars,
+            ));
+        }
+
+        group.bench_with_input(
+            BenchmarkId::new("Svo", *num_vars),
+            &(initial_statement, challenger.clone()),
+            |b, (initial_statement, challenger)| {
+                b.iter(|| {
+                    let mut challenger = challenger.clone();
+
+                    // Initialize proof
+                    let mut proof =
+                        WhirProof::<F, EF, MyMmcs>::from_protocol_parameters(&params, *num_vars);
+
+                    // First round - fold first half of variables
+                    let (mut sumcheck_prover, _) = SumcheckProver::from_base_evals(
+                        &mut proof.initial_sumcheck,
+                        &mut challenger,
+                        classic_folding_schedule[1],
+                        0,
+                        initial_statement,
+                    );
+
+                    // Second round - fold remaining variables
+                    if classic_folding_schedule.len() > 1 && classic_folding_schedule[1] > 0 {
+                        let mut sumcheck_data: SumcheckData<F, EF> = SumcheckData::default();
+                        sumcheck_prover.compute_sumcheck_polynomials(
+                            &mut sumcheck_data,
+                            &mut challenger,
+                            classic_folding_schedule[1],
+                            0,
+                            None,
+                        );
+                        proof.set_final_sumcheck_data(sumcheck_data);
+                    }
+                });
+            },
+        );
+    }
+
+    group.finish();
+}
+
+criterion_group!(benches, bench_sumcheck_prover);
+criterion_main!(benches);
