@@ -12,6 +12,7 @@ use std::mem::size_of;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
+use std::time::Duration;
 
 use metal::{
     Buffer, CompileOptions, ComputeCommandEncoderRef, ComputePipelineState, Device,
@@ -2032,6 +2033,38 @@ impl MetalBabyBearDft {
     }
 
     fn try_gpu_dft_inplace(&self, values: &mut Vec<BabyBear>, height: usize, width: usize) -> Option<()> {
+        self.try_gpu_dft_inplace_recording(values, height, width, |_| {})
+    }
+
+    /// Transform the matrix on Metal and return the GPU command-buffer duration.
+    /// A completed transform updates the matrix even if timestamps are unavailable.
+    /// Returns `None` if Metal did not complete the transform or timestamps are unavailable.
+    #[allow(unexpected_cfgs)] // The objc selector macro checks its legacy cargo-clippy feature.
+    pub fn gpu_dft_batch_timed(&self, mat: &mut RowMajorMatrix<BabyBear>) -> Option<Duration> {
+        use objc::{msg_send, sel, sel_impl};
+
+        let height = mat.height();
+        let width = mat.width();
+        let mut elapsed = None;
+        self.try_gpu_dft_inplace_recording(&mut mat.values, height, width, |cmd| {
+            // The command buffer has completed, so Metal's GPU timestamps are available.
+            let (start, end): (f64, f64) = unsafe {
+                (msg_send![cmd, GPUStartTime], msg_send![cmd, GPUEndTime])
+            };
+            if start > 0.0 && end > start {
+                elapsed = Duration::try_from_secs_f64(end - start).ok();
+            }
+        })?;
+        elapsed
+    }
+
+    fn try_gpu_dft_inplace_recording(
+        &self,
+        values: &mut Vec<BabyBear>,
+        height: usize,
+        width: usize,
+        mut record: impl FnMut(&metal::CommandBufferRef),
+    ) -> Option<()> {
         let log_n = log2_strict_usize(height) as u32;
         if log_n < self.gpu_min_log_n || log_n > Self::gpu_max_log_n() {
             return None;
@@ -2063,7 +2096,11 @@ impl MetalBabyBearDft {
                 enc.end_encoding();
                 cmd.commit();
                 cmd.wait_until_completed();
-                cmd.status() != MTLCommandBufferStatus::Error
+                let completed = cmd.status() != MTLCommandBufferStatus::Error;
+                if completed {
+                    record(cmd);
+                }
+                completed
             });
             Self::release_buf(&self.data_buf_cache, data_buf);
             if ok { return Some(()); }
@@ -2096,7 +2133,11 @@ impl MetalBabyBearDft {
             enc.end_encoding();
             cmd.commit();
             cmd.wait_until_completed();
-            cmd.status() != MTLCommandBufferStatus::Error
+            let completed = cmd.status() != MTLCommandBufferStatus::Error;
+            if completed {
+                record(cmd);
+            }
+            completed
         });
 
         if !ok {

@@ -1,4 +1,4 @@
-use std::vec;
+use std::{time::Duration, vec};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use p3_baby_bear::{BabyBear, Poseidon2BabyBear};
@@ -109,6 +109,28 @@ fn benchmark_raw_dft(c: &mut Criterion) {
                     criterion::BatchSize::LargeInput,
                 );
             });
+
+            if (log_n, width) == (14, 16) {
+                group.bench_function("metal_gpu_execution_14x16", |b| {
+                    let expected = cpu_dft.dft_batch(RowMajorMatrix::new(values.clone(), width));
+                    let mut check = RowMajorMatrix::new(values.clone(), width);
+                    gpu_dft
+                        .gpu_dft_batch_timed(&mut check)
+                        .expect("Metal transform and GPU timestamps are required");
+                    assert_eq!(check.values, expected.values);
+
+                    b.iter_custom(|iterations| {
+                        let mut gpu_time = Duration::ZERO;
+                        for _ in 0..iterations {
+                            let mut mat = RowMajorMatrix::new(values.clone(), width);
+                            gpu_time += gpu_dft
+                                .gpu_dft_batch_timed(&mut mat)
+                                .expect("Metal transform and GPU timestamps are required");
+                        }
+                        gpu_time
+                    });
+                });
+            }
         }
     }
 
