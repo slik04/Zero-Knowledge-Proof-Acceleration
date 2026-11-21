@@ -175,7 +175,7 @@ fn benchmark_merkle(c: &mut Criterion) {
         group.bench_function(&format!("gpu_{log_n}x{width}"), |b| {
             b.iter_batched(
                 || {
-                    gpu.device.new_buffer_with_data(
+                    gpu.device().new_buffer_with_data(
                         data.as_ptr().cast(),
                         (total * 4) as u64,
                         opts,

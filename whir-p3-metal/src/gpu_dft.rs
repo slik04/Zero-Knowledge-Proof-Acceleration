@@ -456,6 +456,11 @@ fn align_up(x: u64, align: u64) -> u64 {
 }
 
 impl MetalBabyBearDft {
+    /// Return the Metal device used by this transform.
+    pub fn device(&self) -> &metal::DeviceRef {
+        &self.inner.device
+    }
+
     /// Minimum log_n for GPU dispatch. The 8MB total-data threshold (in
     /// try_gpu_dft_inplace) is the primary gate; this only guards against
     /// degenerate cases with very few NTT stages but huge width.
