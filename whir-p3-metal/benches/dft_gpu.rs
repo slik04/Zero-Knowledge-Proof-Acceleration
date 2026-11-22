@@ -87,7 +87,12 @@ fn benchmark_raw_dft(c: &mut Criterion) {
     let mut group = c.benchmark_group("raw_dft");
 
     for log_n in [14, 16, 18, 20, 22] {
-        for width in [1, 16, 64] {
+        let widths: &[usize] = if log_n == 14 {
+            &[1, 4, 8, 12, 16, 64]
+        } else {
+            &[1, 16, 64]
+        };
+        for &width in widths {
             let n: usize = 1 << log_n;
             let mut rng = SmallRng::seed_from_u64(0);
             let values: Vec<F> = (0..n * width).map(|_| rng.random()).collect();
@@ -110,8 +115,8 @@ fn benchmark_raw_dft(c: &mut Criterion) {
                 );
             });
 
-            if (log_n, width) == (14, 16) {
-                group.bench_function("metal_gpu_execution_14x16", |b| {
+            if log_n == 14 && matches!(width, 4 | 8 | 12 | 16) {
+                group.bench_function(format!("metal_gpu_execution_{log_n}x{width}"), |b| {
                     let expected = cpu_dft.dft_batch(RowMajorMatrix::new(values.clone(), width));
                     let mut check = RowMajorMatrix::new(values.clone(), width);
                     gpu_dft

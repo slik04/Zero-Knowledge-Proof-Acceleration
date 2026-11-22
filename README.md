@@ -23,6 +23,9 @@ cd whir-p3-metal
 cargo +nightly bench --features gpu-metal --bench dft_gpu -- 'raw_dft/(cpu|metal_gpu|metal_gpu_execution)_14x16$'
 ```
 
+To sweep 4, 8, 12, and 16 columns at the same height, use the filter
+`'raw_dft/(cpu|metal_gpu|metal_gpu_execution)_14x(4|8|12|16)$'`.
+
 The GPU execution benchmark checks the result against the CPU before timing.
 It sums Metal's GPU start-to-end command-buffer durations.
 The full-call benchmark also includes host-side work and waiting for completion.
