@@ -37,3 +37,16 @@ The [pilot samples](results/ntt/metal-pilot-14x16.csv) were collected on an Appl
 | Full transform call | 245.08 µs | 235.65–253.24 µs |
 | GPU command-buffer execution | 79.62 µs | 76.00–80.62 µs |
 | Per-call difference | 166.19 µs | 156.92–176.44 µs |
+
+### Four-width sweep
+
+The [raw samples](results/ntt/metal-width-sweep-14.csv) were collected on 22 November 2026 at benchmark commit `dfef003` on the same M2 Max, macOS version, and Rust toolchain as the pilot. The Mac ran on battery with Low Power Mode off. The sweep used the release profile, seed 0, and default Rayon threading on a 12-core machine. Criterion collected 10 samples per case after a three-second warm-up. Every width dispatched to Metal and passed the CPU equality check.
+
+Each entry reports the median and the 25th–75th percentile range in microseconds, calculated from Criterion's per-sample elapsed time divided by its iteration count. Runs were isolated.
+
+| Columns at 16,384 rows | CPU | Full Metal call | GPU execution |
+|---:|---:|---:|---:|
+| 4 | 162.33 (161.24–162.46) | 204.92 (203.55–205.97) | 52.14 (51.99–52.28) |
+| 8 | 210.27 (204.36–216.73) | 215.16 (210.93–222.26) | 54.67 (54.47–55.04) |
+| 12 | 269.56 (254.01–276.79) | 229.77 (224.04–236.24) | 59.39 (59.21–59.84) |
+| 16 | 282.76 (269.89–286.91) | 249.79 (237.25–251.86) | 62.63 (62.60–63.24) |
