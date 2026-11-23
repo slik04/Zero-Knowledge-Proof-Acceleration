@@ -2374,6 +2374,8 @@ void poseidon2_permute_16(thread Bb* state, constant Bb* rc) {
 // ── Leaf hashing: PaddingFreeSponge<Perm, 16, 8, 8> ──────────────────
 // Each thread hashes one row (leaf) of the DFT output matrix.
 // Absorbs 8 elements at a time (overwrite mode), permutes, squeezes 8.
+// A partial block overwrites only its input lanes, preserving the other lanes
+// from the previous permutation, as Plonky3's PaddingFreeSponge does.
 kernel void poseidon2_hash_leaves(
     device const Bb* data        [[buffer(0)]],
     device Bb* digests           [[buffer(1)]],
@@ -2391,9 +2393,6 @@ kernel void poseidon2_hash_leaves(
         uint remaining = min(8u, leaf_width - absorbed);
         for (uint i = 0; i < remaining; i++) {
             state[i] = data[row_start + absorbed + i];
-        }
-        if (remaining < 8) {
-            for (uint i = remaining; i < 8; i++) state[i] = Bb{0};
         }
         poseidon2_permute_16(state, rc);
     }
@@ -2454,9 +2453,6 @@ kernel void poseidon2_hash_and_compress(
         for (uint i = 0; i < remaining; i++) {
             left[i] = data[left_start + absorbed + i];
         }
-        if (remaining < 8) {
-            for (uint i = remaining; i < 8; i++) left[i] = Bb{0};
-        }
         poseidon2_permute_16(left, rc);
     }
     // Write left leaf digest
@@ -2470,9 +2466,6 @@ kernel void poseidon2_hash_and_compress(
         uint remaining = min(8u, leaf_width - absorbed);
         for (uint i = 0; i < remaining; i++) {
             right[i] = data[right_start + absorbed + i];
-        }
-        if (remaining < 8) {
-            for (uint i = remaining; i < 8; i++) right[i] = Bb{0};
         }
         poseidon2_permute_16(right, rc);
     }
@@ -2521,7 +2514,6 @@ kernel void poseidon2_hash4_compress3(
         for (uint absorbed = 0; absorbed < leaf_width; absorbed += 8) {
             uint rem = min(8u, leaf_width - absorbed);
             for (uint i = 0; i < rem; i++) st[i] = data[base + absorbed + i];
-            if (rem < 8) for (uint i = rem; i < 8; i++) st[i] = Bb{0};
             poseidon2_permute_16(st, rc);
         }
         for (uint i = 0; i < 8; i++) d0[i] = st[i];
@@ -2536,7 +2528,6 @@ kernel void poseidon2_hash4_compress3(
         for (uint absorbed = 0; absorbed < leaf_width; absorbed += 8) {
             uint rem = min(8u, leaf_width - absorbed);
             for (uint i = 0; i < rem; i++) st[i] = data[base + absorbed + i];
-            if (rem < 8) for (uint i = rem; i < 8; i++) st[i] = Bb{0};
             poseidon2_permute_16(st, rc);
         }
         for (uint i = 0; i < 8; i++) d1[i] = st[i];
@@ -2563,7 +2554,6 @@ kernel void poseidon2_hash4_compress3(
         for (uint absorbed = 0; absorbed < leaf_width; absorbed += 8) {
             uint rem = min(8u, leaf_width - absorbed);
             for (uint i = 0; i < rem; i++) st[i] = data[base + absorbed + i];
-            if (rem < 8) for (uint i = rem; i < 8; i++) st[i] = Bb{0};
             poseidon2_permute_16(st, rc);
         }
         for (uint i = 0; i < 8; i++) d2[i] = st[i];
@@ -2578,7 +2568,6 @@ kernel void poseidon2_hash4_compress3(
         for (uint absorbed = 0; absorbed < leaf_width; absorbed += 8) {
             uint rem = min(8u, leaf_width - absorbed);
             for (uint i = 0; i < rem; i++) st[i] = data[base + absorbed + i];
-            if (rem < 8) for (uint i = rem; i < 8; i++) st[i] = Bb{0};
             poseidon2_permute_16(st, rc);
         }
         for (uint i = 0; i < 8; i++) d3[i] = st[i];
@@ -2638,7 +2627,6 @@ kernel void poseidon2_merkle_simd(
     for (uint absorbed = 0; absorbed < leaf_width; absorbed += 8) {
         uint rem = min(8u, leaf_width - absorbed);
         for (uint i = 0; i < rem; i++) st[i] = data[base + absorbed + i];
-        if (rem < 8) for (uint i = rem; i < 8; i++) st[i] = Bb{0};
         poseidon2_permute_16(st, rc);
     }
 
