@@ -142,3 +142,8 @@ harness = false
 name = "dft_gpu"
 harness = false
 required-features = ["gpu-metal"]
+
+[[bench]]
+name = "merkle"
+harness = false
+required-features = ["gpu-metal", "parallel"]
