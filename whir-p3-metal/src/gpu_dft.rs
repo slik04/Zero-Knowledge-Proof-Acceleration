@@ -1963,6 +1963,11 @@ impl MetalBabyBearDft {
             enc.end_encoding();
             cmd.commit();
             cmd.wait_until_completed();
+            assert_eq!(
+                cmd.status(),
+                MTLCommandBufferStatus::Completed,
+                "Metal Merkle command did not complete successfully",
+            );
             merkle
         });
 
