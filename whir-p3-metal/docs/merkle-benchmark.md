@@ -1,6 +1,8 @@
 # Merkle commit benchmark
 
 Use `benches/merkle.rs` for CPU versus Metal comparisons on Apple Silicon.
+An initial [M4 Pro validation run](merkle-m4-pro-baseline.md) records all
+three repeated sessions, their uncertainty, and their execution conditions.
 It measures one prepared, owned row-major matrix becoming a commitment cap
 and a retained tree that can produce openings. Both implementations use
 BabyBear, Poseidon2 width 16, an eight-element digest, a binary tree, and a

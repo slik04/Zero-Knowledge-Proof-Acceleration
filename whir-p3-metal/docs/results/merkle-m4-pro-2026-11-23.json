@@ -1,0 +1,333 @@
+{
+  "commit": "ba4848706209aff6b6607eed7b766b735a563042",
+  "worktree_status": "M ../README.md\n?? docs/merkle-benchmark.md",
+  "hardware": "machdep.cpu.brand_string: Apple M4 Pro\nhw.memsize: 25769803776\nhw.ncpu: 14\nhw.perflevel0.physicalcpu: 10\nhw.perflevel1.physicalcpu: 4",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t27.2.1\nBuildVersion:\t\t26B131",
+  "compiler": "rustc 1.93.0 (254b59607 2026-01-19)\nbinary: rustc\ncommit-hash: 254b59607d4417e9dffbc307138ae5c86280fe4c\ncommit-date: 2026-01-19\nhost: aarch64-apple-darwin\nrelease: 1.93.0\nLLVM version: 21.1.8",
+  "power_settings": "Battery Power:\n Sleep On Power Button 1\n powermode            0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 0\n networkoversleep     0\n sleep                1\n lessbright           1\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n powermode            0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                1\n tcpkeepalive         1\n disksleep            10",
+  "timing": {
+    "samples": 30,
+    "warmup_seconds": 2,
+    "measurement_seconds": 5
+  },
+  "runs": [
+    {
+      "session": 1,
+      "backend": "cpu-1",
+      "threads": 1,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/cpu_1t/"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:05:12.375896+00:00",
+        "load": "16:05  up 11 days,  2:52, 1 user, load averages: 3.05 3.54 3.19",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:09:29.182811+00:00",
+        "load": "16:09  up 11 days,  2:56, 1 user, load averages: 4.48 4.04 3.48",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "session": 1,
+      "backend": "cpu-all",
+      "threads": 14,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/cpu_14t/"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:09:29.202735+00:00",
+        "load": "16:09  up 11 days,  2:56, 1 user, load averages: 4.48 4.04 3.48",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:12:16.366369+00:00",
+        "load": "16:12  up 11 days,  2:59, 1 user, load averages: 15.31 9.00 5.63",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "session": 1,
+      "backend": "metal",
+      "threads": 14,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/metal_"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:12:16.387076+00:00",
+        "load": "16:12  up 11 days,  2:59, 1 user, load averages: 15.31 9.00 5.63",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:15:00.288232+00:00",
+        "load": "16:15  up 11 days,  3:02, 1 user, load averages: 2.54 5.92 4.93",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "session": 2,
+      "backend": "metal",
+      "threads": 14,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/metal_"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:15:20.312013+00:00",
+        "load": "16:15  up 11 days,  3:02, 1 user, load averages: 1.97 5.57 4.83",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:18:09.189969+00:00",
+        "load": "16:18  up 11 days,  3:05, 1 user, load averages: 3.25 4.33 4.42",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "session": 2,
+      "backend": "cpu-all",
+      "threads": 14,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/cpu_14t/"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:18:09.211714+00:00",
+        "load": "16:18  up 11 days,  3:05, 1 user, load averages: 3.25 4.33 4.42",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:20:53.845501+00:00",
+        "load": "16:20  up 11 days,  3:08, 1 user, load averages: 16.29 9.50 6.53",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "session": 2,
+      "backend": "cpu-1",
+      "threads": 1,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/cpu_1t/"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:20:53.868796+00:00",
+        "load": "16:20  up 11 days,  3:08, 1 user, load averages: 16.29 9.50 6.53",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:25:03.664373+00:00",
+        "load": "16:25  up 11 days,  3:12, 1 user, load averages: 2.13 5.53 5.52",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "session": 3,
+      "backend": "cpu-1",
+      "threads": 1,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/cpu_1t/"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:25:23.688306+00:00",
+        "load": "16:25  up 11 days,  3:12, 1 user, load averages: 2.42 5.36 5.46",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:29:33.380083+00:00",
+        "load": "16:29  up 11 days,  3:16, 1 user, load averages: 2.39 3.98 4.83",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "session": 3,
+      "backend": "cpu-all",
+      "threads": 14,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/cpu_14t/"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:29:33.401190+00:00",
+        "load": "16:29  up 11 days,  3:16, 1 user, load averages: 2.39 3.98 4.83",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:32:22.263279+00:00",
+        "load": "16:32  up 11 days,  3:19, 1 user, load averages: 15.92 9.09 6.78",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "session": 3,
+      "backend": "metal",
+      "threads": 14,
+      "command": [
+        "cargo",
+        "bench",
+        "--locked",
+        "--features",
+        "gpu-metal",
+        "--bench",
+        "merkle",
+        "--",
+        "merkle_commit/metal_"
+      ],
+      "start": {
+        "utc": "2026-11-23T16:32:22.284259+00:00",
+        "load": "16:32  up 11 days,  3:19, 1 user, load averages: 15.92 9.09 6.78",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "exit_code": 0,
+      "end": {
+        "utc": "2026-11-23T16:35:08.919722+00:00",
+        "load": "16:35  up 11 days,  3:22, 1 user, load averages: 3.25 6.43 6.09",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35651683)\t100%; charged; 0:00 remaining present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    }
+  ],
+  "statistic": "Median of normalized Criterion sample times (sample duration ns / iteration count), with its own 95% bootstrap confidence interval; not individual-call p50.",
+  "raw_artifacts_local": "target/merkle-runs/2026-11-23-baseline",
+  "raw_artifacts_versioned": false,
+  "idle_sleep_control": "A temporary caffeinate -i assertion was started at 2026-11-23T16:14:18.422472+00:00 during session1 Metal measurements to prevent idle system sleep. Power settings were not changed.",
+  "case_results": 171,
+  "normalized_samples": 5130,
+  "build": {
+    "rustflags": [
+      "-C",
+      "target-cpu=native"
+    ],
+    "features": [
+      "default",
+      "gpu-metal",
+      "parallel"
+    ],
+    "release_profile": {
+      "lto": "thin",
+      "codegen-units": 1
+    },
+    "plonky3_revision": "090b134a7e4f73191dad8849c410fcc38967a814"
+  },
+  "workload": {
+    "field": "BabyBear",
+    "field_element_bytes": 4,
+    "permutation": "Poseidon2",
+    "state_width": 16,
+    "sponge_rate": 8,
+    "digest_elements": 8,
+    "arity": 2,
+    "cap_height": 0,
+    "permutation_seed": 1,
+    "input_seed": 0,
+    "rng": "rand::rngs::SmallRng (version pinned in Cargo.lock)"
+  },
+  "validation": {
+    "cpu_library": {
+      "passed": 22,
+      "failed": 0
+    },
+    "metal_library": {
+      "passed": 29,
+      "failed": 0
+    },
+    "metal_merkle_integration": {
+      "passed": 3,
+      "failed": 0
+    },
+    "benchmark_smoke_cases": 38
+  },
+  "gpu_inventory_after_measurement": [
+    {
+      "model": "Apple M4 Pro",
+      "cores": 20,
+      "metal_support": "spdisplays_metal4"
+    }
+  ]
+}
